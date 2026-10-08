@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Web Command Center</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f35; --fg:#e8eaf6; --accent:#7c8cff; --ok:#4caf7d; --muted:#8a90b0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--fg); font-family:system-ui,sans-serif; height:100vh; display:flex; flex-direction:column; }
+  header { padding:14px 20px; background:var(--card); border-bottom:1px solid #2a2f4a; display:flex; align-items:center; gap:12px; }
+  header h1 { font-size:17px; } header .dot { width:9px;height:9px;border-radius:50%;background:#f66; }
+  header .dot.on { background:var(--ok); }
+  main { flex:1; display:grid; grid-template-columns:340px 1fr; gap:0; overflow:hidden; }
+  .left { border-right:1px solid #2a2f4a; padding:20px; display:flex; flex-direction:column; gap:14px; overflow-y:auto; }
+  .right { display:flex; flex-direction:column; overflow:hidden; }
+  textarea { background:var(--card); color:var(--fg); border:1px solid #2a2f4a; border-radius:10px; padding:12px; font-size:14px; min-height:110px; resize:vertical; font-family:inherit; }
+  .agents { display:flex; flex-wrap:wrap; gap:6px; }
+  .chip { background:var(--card); border:1px solid #2a2f4a; border-radius:20px; padding:5px 12px; font-size:12px; cursor:pointer; user-select:none; }
+  .chip.sel { border-color:var(--accent); color:var(--accent); background:#232a4a; }
+  button.go { background:var(--accent); color:#fff; border:0; border-radius:10px; padding:12px; font-size:15px; font-weight:600; cursor:pointer; }
+  button.go:disabled { opacity:.5; }
+  .hint { font-size:12px; color:var(--muted); }
+  #log { flex:1; overflow-y:auto; padding:16px 20px; font-family:ui-monospace,monospace; font-size:13px; line-height:1.7; }
+  #log div { white-space:pre-wrap; word-break:break-word; }
+  .files { border-top:1px solid #2a2f4a; max-height:180px; overflow-y:auto; padding:10px 20px; }
+  .files a { color:var(--accent); display:block; font-size:13px; padding:2px 0; text-decoration:none; }
+</style>
+</head>
+<body>
+<header>
+  <div class="dot" id="wsdot"></div>
+  <h1>⚡ Web Command Center</h1>
+  <span class="hint">multi-agent · lokal (Ollama)</span>
+</header>
+<main>
+  <section class="left">
+    <div>
+      <div class="hint" style="margin-bottom:6px">OBJEKTIF</div>
+      <textarea id="obj" placeholder="Contoh: Riset topik minuman herbal trending, buat caption promosi + video, lalu posting ke sosmed dengan affiliate link."></textarea>
+    </div>
+    <div>
+      <div class="hint" style="margin-bottom:6px">PIPELINE (klik = pilih urutan; kosong = auto oleh LLM)</div>
+      <div class="agents" id="agents"></div>
+    </div>
+    <button class="go" id="go" onclick="send()">🚀 Jalankan Pipeline</button>
+    <div class="hint" id="pipelineInfo"></div>
+  </section>
+  <section class="right">
+    <div id="log"></div>
+    <div class="files" id="files"></div>
+  </section>
+</main>
+<script src="/app.js"></script>
+</body>
+</html>
