@@ -116,20 +116,46 @@ class Orchestrator:
         return {"objective": objective, "pipeline": pipeline, "outputs": outputs}
 
     def auto_plan(self, objective: str) -> list[str]:
-        """Minta LLM memilih rantai agen yang cocok; fallback default."""
+        """
+        Minta LLM memilih rantai agen; hasil pipeline HARUS berakhir di agen
+        yang sesuai instruksi (diminta video → berakhir di videomaker, dst).
+        """
+        # Deteksi kata kunci: agen terakhir wajib sesuai jenis output yang diminta
+        o = objective.lower()
+        last_agent_rules = [
+            (["video", "mp4", "render"], "videomaker"),
+            (["posting", "post ke", "upload ke sosmed", "publish ke", "kirim ke sosmed", "instagram", "twitter", "tiktok"], "publisher"),
+            (["seo", "affiliate"], "marketer"),
+            (["riset", "resep", "carilah", "teliti", "topik apa"], "researcher"),
+        ]
+        required_last = None
+        for keywords, agent in last_agent_rules:
+            if any(k in o for k in keywords):
+                required_last = agent
+                break
+
         names = ", ".join(f"{k} ({v['role']})" for k, v in AGENTS.items())
         prompt = (
             f"Objektif: {objective}\n"
             f"Agen tersedia: {names}.\n"
-            "Pilih urutan agen (2-4) yang paling cocok. Jawab HANYA JSON array, "
-            'contoh: ["researcher","writer","marketer"]'
+            "Pilih urutan agen (2-4) yang paling cocok. Agen TERAKHIR harus sesuai "
+            "jenis hasil akhir yang diminta user (misal minta video → berakhir di videomaker). "
+            "Jawab HANYA JSON array, contoh: [\"researcher\",\"writer\",\"marketer\"]"
         )
         try:
             raw = chat([{"role": "user", "content": prompt}])
             m = raw[raw.find("["):raw.rfind("]") + 1]
             plan = [a for a in json.loads(m) if a in AGENTS]
             if plan:
+                # Paksa agen terakhir sesuai jenis output
+                if required_last and plan[-1] != required_last:
+                    if required_last in plan:
+                        plan.remove(required_last)
+                    plan.append(required_last)
                 return plan
         except Exception:
             pass
-        return ["researcher", "writer", "marketer"]
+        fallback = ["researcher", "writer", "marketer"]
+        if required_last and required_last not in fallback:
+            fallback.append(required_last)
+        return fallback
