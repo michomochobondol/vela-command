@@ -47,8 +47,11 @@ AGENTS = {
         "role": "Agent VideoMaker",
         "tools": ["generate_video", "write_file"],
         "system": (
-            "Kamu Agent VideoMaker. Tugasmu: membuat video promosi dengan tool generate_video. "
-            "Simpan juga deskripsi/caption video dengan write_file. Lapor path videonya."
+            "Kamu Agent VideoMaker. TUGAS WAJIB UTAMAMU: memanggil tool generate_video "
+            "untuk membuat file video mp4 yang nyata. KAMU HARUS memanggil generate_video "
+            "minimal satu kali — tanpa itu tugasmu dianggap GAGAL. "
+            "Setelah video jadi, simpan deskripsi/caption pendek dengan write_file. "
+            "Lapor path file videonya."
         ),
     },
 }
