@@ -73,22 +73,34 @@ class Orchestrator:
             try:
                 resp = chat_tool(messages, tools)
             except Exception as e:
-                result_text = f"ERROR LLM: {e}"
-                self.log(f"❌ {a['role']}: {e}")
-                break
-            if resp["type"] == "tool_call":
-                name, args = resp["name"], resp["arguments"]
-                self.log(f"🔧 {a['role']} memanggil {name}({json.dumps(args, ensure_ascii=False)[:150]})")
-                fn = TOOLS.get(name, {}).get("fn")
-                out = fn(**args) if fn else f"ERROR: tool {name} tidak ada"
-                self.log(f"   ↳ hasil: {str(out)[:200]}")
-                messages.append({"role": "assistant", "content": "", "tool_calls": [
-                    {"function": {"name": name, "arguments": args}}]})
-                messages.append({"role": "tool", "content": str(out)[:2000]})
-            else:
-                result_text = resp["content"]
-                self.log(f"✅ {a['role']} selesai.")
-                break
+                # Retry sekali (error LLM bisa sementara), lalu lanjut ke agen berikutnya
+                try:
+                    resp = chat_tool(messages, tools)
+                except Exception as e2:
+                    result_text = f"(ERROR LLM setelah 2 percobaan: {e2})"
+                    self.log(f"❌ {a['role']}: {e2}")
+                    break
+            try:
+                if resp["type"] == "tool_call":
+                    name, args = resp["name"], resp["arguments"]
+                    self.log(f"🔧 {a['role']} memanggil {name}({json.dumps(args, ensure_ascii=False)[:150]})")
+                    fn = TOOLS.get(name, {}).get("fn")
+                    try:
+                        out = fn(**args) if fn else f"ERROR: tool {name} tidak ada"
+                    except TypeError as e:
+                        out = f"ERROR: argumen tool salah ({e})"
+                    except Exception as e:
+                        out = f"ERROR tool gagal: {type(e).__name__}: {str(e)[:200]}"
+                    self.log(f"   ↳ hasil: {str(out)[:200]}")
+                    messages.append({"role": "assistant", "content": "", "tool_calls": [
+                        {"function": {"name": name, "arguments": args}}]})
+                    messages.append({"role": "tool", "content": str(out)[:2000]})
+                else:
+                    result_text = resp["content"]
+                    self.log(f"✅ {a['role']} selesai.")
+                    break
+            except Exception as e:
+                self.log(f"⚠️ {a['role']} step {step} error: {e} — lanjut.")
         return result_text or "(tidak ada output teks)"
 
     def run_pipeline(self, objective: str, pipeline: list[str]) -> dict:

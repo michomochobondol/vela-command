@@ -15,10 +15,15 @@ CONFIG_DIR = Path(__file__).resolve().parent
 
 # ---------- 1. Scrape web ----------
 def scrape_web(url: str) -> str:
-    """Ambil teks utama dari sebuah halaman web."""
-    headers = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"}
-    r = httpx.get(url, headers=headers, timeout=30, follow_redirects=True)
-    r.raise_for_status()
+    """Ambil teks utama dari sebuah halaman web. Tidak melempar exception — balas pesan error."""
+    try:
+        headers = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"}
+        r = httpx.get(url, headers=headers, timeout=30, follow_redirects=True)
+        r.raise_for_status()
+    except httpx.HTTPStatusError as e:
+        return f"ERROR: halaman {url} balas HTTP {e.response.status_code}. Coba URL lain."
+    except Exception as e:
+        return f"ERROR: gagal membuka {url}: {type(e).__name__}. Coba URL lain atau kesimpulkan dari pengetahuanmu."
     soup = BeautifulSoup(r.text, "html.parser")
     for tag in soup(["script", "style", "nav", "footer", "header"]):
         tag.decompose()
